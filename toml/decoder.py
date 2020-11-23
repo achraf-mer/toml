@@ -50,16 +50,19 @@ TIME_RE = re.compile("([0-9]{2}):([0-9]{2}):([0-9]{2})(\.([0-9]{3,6}))?")
 class TomlDecodeError(ValueError):
     """Base toml Exception / Error."""
 
-    def __init__(self, msg, doc, pos):
+    def __init__(self, msg, doc, pos, line=None):
         lineno = doc.count('\n', 0, pos) + 1
         colno = pos - doc.rfind('\n', 0, pos)
         emsg = '{} (line {} column {} char {})'.format(msg, lineno, colno, pos)
+        if line:
+            emsg += '\n Failure at: {}'.format(line)
         ValueError.__init__(self, emsg)
         self.msg = msg
         self.doc = doc
         self.pos = pos
         self.lineno = lineno
         self.colno = colno
+        self.line = line
 
 
 # Matches a TOML number, which allows underscores for readability
@@ -455,7 +458,7 @@ def loads(s, _dict=dict, decoder=None):
                 ret = decoder.load_line(line, currentlevel, multikey,
                                         multibackslash)
             except ValueError as err:
-                raise TomlDecodeError(str(err), original, pos)
+                raise TomlDecodeError(str(err), original, pos, line=line)
             if ret is not None:
                 multikey, multilinestr, multibackslash = ret
     return retval
